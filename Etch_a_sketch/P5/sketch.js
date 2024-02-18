@@ -7,18 +7,21 @@ let yPos = -1;
 
 const WIDTH = 511;
 const HEIGHT = 400;
+const BACKGROUND_COLOR = 235;
 
 function setup() {
     buildEtchASketch();
-    pixelDensity(1); // Ensure each pixel is one unit in the canvas
-    loadPixels(); // Load the pixel array for manipulation
+    pixelDensity(1);
+    loadPixels();
+    noSmooth();
+    strokeWeight(2);
     // Setup Web Serial using serial.js
     serial = new Serial();
     serial.on(SerialEvents.DATA_RECEIVED, onSerialDataReceived);
 
     // If we have previously approved ports, attempt to connect with them
     // serial.autoConnectAndOpenPreviouslyApprovedPort(serialOptions);
-    background(50);
+    background(BACKGROUND_COLOR);
     // Add in a lil <p> element to provide messages. This is optional
     pHtmlMsg = createP("Uncomment me for debugging!");
 
@@ -27,6 +30,7 @@ function setup() {
     buttonConnect.mousePressed(() => {
         if (serial.isOpen()) {
             serial.close();
+            console.log(serial.getSignals())
         }
         serial.connectAndOpen(null, serialOptions);
     });
@@ -34,16 +38,18 @@ function setup() {
     // Add a button to clear the canvas 
     let clearButton = createButton("Clear");
     clearButton.mousePressed(() => {
-        background(50);
+        console.log("Clearing the canvas")
+        background(BACKGROUND_COLOR);
         xPos = -1;
         yPos = -1;
     });
     let randomLineButton = createButton("Random Line");
     randomLineButton.mousePressed(() => {
-        let x1 = random(WIDTH);
-        let y1 = random(HEIGHT);
-        let x2 = random(WIDTH);
-        let y2 = random(HEIGHT);
+        console.log("Drawing a random line");
+        let x1 = Math.floor(random(WIDTH));
+        let y1 = Math.floor(random(HEIGHT));
+        let x2 = Math.floor(random(WIDTH));
+        let y2 = Math.floor(random(HEIGHT));
         drawLine(x1, y1, x2, y2);
     });
     
@@ -62,9 +68,6 @@ function draw() {
     drawLine(xPos, yPos, new_xPos, new_yPos);
     xPos = new_xPos;
     yPos = new_yPos;
-
-    // Color in each pixel from the last position to the new position
-    // with the color black
     }
 }
 
@@ -88,31 +91,35 @@ function onSerialDataReceived(eventSender, newData) {
     }
 }
 
-
+/* Bresenham's line algorithm */
 function drawLine(x1, y1, x2, y2) {
-  let dx = abs(x2 - x1);
-  let dy = abs(y2 - y1);
-  let sx = x1 < x2 ? 1 : -1;
-  let sy = y1 < y2 ? 1 : -1;
-  let err = dx - dy;
+    // console.log("Drawing line from (" + x1 + ", " + y1 + ") to (" + x2 + ", " + y2 + ")");
+    let dx = abs(x2 - x1);
+    let dy = abs(y2 - y1);
+    let sx = x1 < x2 ? 1 : -1;
+    let sy = y1 < y2 ? 1 : -1;
+    let err = dx - dy;
 
-  while (x1 !== x2 || y1 !== y2) {
+    while (x1 !== x2 || y1 !== y2) {
+    // console.log("Drawing pixel at (" + x1 + ", " + y1 + ")");
     setPixel(x1, y1);
     let e2 = 2 * err;
-    if (e2 > -dy) {
-      err -= dy;
-      x1 += sx;
+        if (e2 > -dy) {
+            err -= dy;
+            x1 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y1 += sy;
+        }
     }
-    if (e2 < dx) {
-      err += dx;
-      y1 += sy;
-    }
-  }
-  setPixel(x2, y2); // Ensure the last pixel is drawn
+    // console.log("Drawing pixel at (" + x2 + ", " + y2 + ")");
+    setPixel(x2, y2); // Ensure the last pixel is drawn
+    // updatePixels();
 }
 
 function setPixel(x, y) {
-  stroke(255);
+  stroke(0);
   point(x, y);
 }
 
