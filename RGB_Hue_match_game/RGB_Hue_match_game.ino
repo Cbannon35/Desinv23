@@ -10,24 +10,22 @@ simple test to fade 3 channels LED
 */
 
 /* Random LED */
-int brightness_1 = 0;    // how bright the LED is
 int redBrightness_1 = 0;
 int greenBrightness_1 = 0;
 int blueBrightness_1 = 0; 
 
-const int redLEDPin_1 = 11;     // LED connected to pin 9
-const int greenLEDPin_1 = 12;  // LED connected to pin 10
-const int blueLEDPin_1 = 13;    // LED connected to pin 11
+const int redLEDPin_1 = 11;     // LED connected to pin 11
+const int greenLEDPin_1 = 12;  // LED connected to pin 12
+const int blueLEDPin_1 = 2;    // LED connected to pin 2 because pin 13 is weird?
 
 /* Player Controlled LED */
-int brightness_2 = 0;    // how bright the LED is
 int redBrightness_2 = 0;
 int greenBrightness_2 = 0;
 int blueBrightness_2 = 0; 
 
-const int redLEDPin_2 = 8;     // LED connected to pin 9
-const int greenLEDPin_2 = 9;  // LED connected to pin 10
-const int blueLEDPin_2 = 10;    // LED connected to pin 11
+const int redLEDPin_2 = 8;     // LED connected to pin 8
+const int greenLEDPin_2 = 9;  // LED connected to pin 9
+const int blueLEDPin_2 = 10;    // LED connected to pin 10
 
 /* Button Logic */
 int adding = 1; // +1 or -1 depending on if we are adding rbg or subtracting
@@ -58,16 +56,15 @@ void setup() {
   pinMode(blue_button, INPUT_PULLUP);
   pinMode(green_button, INPUT_PULLUP);
 
-  /* set state button */
-  digitalWrite(state_LED, HIGH);
-  adding = 1;
-
+  /* set game state state */
   Flash_LEDs(5);
+  randomize_LEDs();
 }
 
 void loop() {
   /* check if user matched other LED */
   if(checkEquality()) {
+    Flash_LEDs(3);
     randomize_LEDs();
     printLEDs();
   }
@@ -92,38 +89,34 @@ void AllOff (){
   analogWrite(blueLEDPin_2, 0);
 
   analogWrite(state_button, 0);
-  adding = false;
+  adding = -1;
 }
 // ---------------------------------
 
 // ---------------------------------
 void Flash_LEDs(int times) {
-  //Test the LED.
   for (int i = 0; i < times; i++) {
-    analogWrite(redLEDPin_1, 100);
-    analogWrite(greenLEDPin_1, 100);
-    analogWrite(blueLEDPin_1, 100);
-    analogWrite(redLEDPin_2, 100);
-    analogWrite(greenLEDPin_2, 100);
-    analogWrite(blueLEDPin_2, 100);
-    delay(500);
+    // flashes both LEDs green
     analogWrite(redLEDPin_1, 0);
-    analogWrite(greenLEDPin_1, 0);
-    analogWrite(blueLEDPin_1, 0);
+    analogWrite(greenLEDPin_1,100);
+    analogWrite(blueLEDPin_1, 100);
     analogWrite(redLEDPin_2, 0);
-    analogWrite(greenLEDPin_2, 0);
-    analogWrite(blueLEDPin_2, 0);
+    analogWrite(greenLEDPin_2, 100);
+
+    analogWrite(blueLEDPin_2, 100); //idk why this doesn't work??? is it being pulled down during setup? led is blue other times
+    delay(500);
+    AllOff();
     delay(500);
   }
 }
 // ---------------------------------
-/* Returns a multiple of 10 between 0 and 250 */
+/* Returns a multiple of 25 between 0 and 250 */
 int randomRGB() {
-  int randomValue = random(26);
-  int mappedValue = randomValue * 10;
+  int randomValue = random(11);
+  int mappedValue = randomValue * 25;
   return mappedValue;
 }
-/* Checks if the user has set RGB to same */
+/* Checks if the user has set RGB to same val as example */
 bool checkEquality() {
   return redBrightness_1 == redBrightness_2 && greenBrightness_1 == greenBrightness_2 && blueBrightness_1 == blueBrightness_2;
 }
@@ -140,7 +133,6 @@ void randomize_LEDs() {
 void sample_buttons() {
   if (digitalRead(state_button) == HIGH) {
     printLEDs();
-
     if (adding > 0) {
       digitalWrite(state_LED, LOW);
       adding = -1;
@@ -148,7 +140,6 @@ void sample_buttons() {
       digitalWrite(state_LED, HIGH);
       adding = 1;
     }
-    
 
     while (digitalRead(state_button) == HIGH) {
       delay(0.5);
@@ -156,7 +147,7 @@ void sample_buttons() {
   }
   if (digitalRead(red_button) == HIGH) {
 
-    redBrightness_2 += adding * 10;
+    redBrightness_2 += adding * 25;
     redBrightness_2 = boundRGB(redBrightness_2);
 
     while (digitalRead(red_button) == HIGH) {
@@ -166,7 +157,7 @@ void sample_buttons() {
   }
   if (digitalRead(green_button) == HIGH) {
 
-    greenBrightness_2 += adding * 10;
+    greenBrightness_2 += adding * 25;
     greenBrightness_2 = boundRGB(greenBrightness_2);
 
     while (digitalRead(green_button) == HIGH) {
@@ -176,7 +167,7 @@ void sample_buttons() {
   }
   if (digitalRead(blue_button) == HIGH) {
 
-    blueBrightness_2 += adding * 10;
+    blueBrightness_2 += adding * 25;
     blueBrightness_2 = boundRGB(blueBrightness_2);
 
     while (digitalRead(blue_button) == HIGH) {
@@ -186,10 +177,10 @@ void sample_buttons() {
   }
 }
 
-/* returns 255 or 0 to bound rgb value */
+/* returns 250, 0, or value to clamp rgb value */
 int boundRGB(int value) {
-  if (value > 255) {
-    return 255;
+  if (value > 250) {
+    return 250;
   } else if (value < 0) {
     return 0;
   } else {
