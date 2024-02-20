@@ -1,3 +1,8 @@
+const MAX_ANALOG_INPUT = 1023;
+const WIDTH = 511;
+const HEIGHT = 400;
+const BACKGROUND_COLOR = 235;
+
 let serial; // the Serial object
 let serialOptions = { baudRate: 115200  };
 let queue = []
@@ -5,12 +10,9 @@ let queue = []
 let xPos = -1;
 let yPos = -1;
 
-const WIDTH = 511;
-const HEIGHT = 400;
-const BACKGROUND_COLOR = 235;
-
 function setup() {
     buildEtchASketch();
+    // Pixel drawing configuration
     pixelDensity(1);
     loadPixels();
     noSmooth();
@@ -22,11 +24,12 @@ function setup() {
     // If we have previously approved ports, attempt to connect with them
     // serial.autoConnectAndOpenPreviouslyApprovedPort(serialOptions);
     background(BACKGROUND_COLOR);
+
     // Add in a lil <p> element to provide messages. This is optional
-    pHtmlMsg = createP("Uncomment me for debugging!");
+    // pHtmlMsg = createP("Uncomment me for debugging!");
 
+    /* Buttons */
     let buttonConnect = createButton("Connect");
-
     buttonConnect.mousePressed(() => {
         if (serial.isOpen()) {
             serial.close();
@@ -34,8 +37,6 @@ function setup() {
         }
         serial.connectAndOpen(null, serialOptions);
     });
-
-    // Add a button to clear the canvas 
     let clearButton = createButton("Clear");
     clearButton.mousePressed(() => {
         console.log("Clearing the canvas")
@@ -52,31 +53,40 @@ function setup() {
         let y2 = Math.floor(random(HEIGHT));
         drawLine(x1, y1, x2, y2);
     });
-    
 }
 
 function draw() {
-  
     while(queue.length > 0){
-    // Grab the least recent value of queue (first in first out)
-    // JavaScript is not multithreaded, so we need not lock the queue
-    // before reading/modifying.
-    let val = queue.shift();
-    new_xPos = val[0];
-    new_yPos = val[1];
+        // Grab the least recent value of queue (first in first out)
+        // JavaScript is not multithreaded, so we need not lock the queue
+        // before reading/modifying.
+        let val = queue.shift();
+        new_xPos = val[0];
+        new_yPos = val[1];
 
-    drawLine(xPos, yPos, new_xPos, new_yPos);
-    xPos = new_xPos;
-    yPos = new_yPos;
+        drawLine(xPos, yPos, new_xPos, new_yPos);
+        xPos = new_xPos;
+        yPos = new_yPos;
     }
 }
 
 function onSerialDataReceived(eventSender, newData) {
-    pHtmlMsg.html("onSerialDataReceived: " + newData);
-
+    // for debugging on the screen
+    // pHtmlMsg.html("onSerialDataReceived: " + newData);
     let data = newData.split(',')
     new_xPos = parseInt(data[0]);
     new_yPos = parseInt(data[1]);
+    /* For some reason x & y are flipped ??? */
+    let temp = new_xPos;
+    new_xPos = new_yPos;
+    new_yPos = temp;
+
+    /* map the values from the arduino to the canvas */
+    new_xPos = map(new_xPos, 0, MAX_ANALOG_INPUT, 0, WIDTH);
+    new_yPos = map(new_yPos, 0, MAX_ANALOG_INPUT, 0, HEIGHT);
+    /* round to nearest int */
+    new_xPos = Math.round(new_xPos);
+    new_yPos = Math.round(new_yPos);
 
     /* Initialize the position if it is the first time */
     if (xPos == -1 || yPos == -1) {
@@ -85,13 +95,14 @@ function onSerialDataReceived(eventSender, newData) {
         return;
     }
 
+    /* Add the new position to the queue to be drawn */
     if (new_xPos != xPos || new_yPos != yPos) {
         newPos = [new_xPos, new_yPos]
         queue.push(newPos);
     }
 }
 
-/* Bresenham's line algorithm */
+/* Bresenham's line algorithm, thanks chatGPT */
 function drawLine(x1, y1, x2, y2) {
     // console.log("Drawing line from (" + x1 + ", " + y1 + ") to (" + x2 + ", " + y2 + ")");
     let dx = abs(x2 - x1);
@@ -101,9 +112,9 @@ function drawLine(x1, y1, x2, y2) {
     let err = dx - dy;
 
     while (x1 !== x2 || y1 !== y2) {
-    // console.log("Drawing pixel at (" + x1 + ", " + y1 + ")");
-    setPixel(x1, y1);
-    let e2 = 2 * err;
+        // console.log("Drawing pixel at (" + x1 + ", " + y1 + ")");
+        setPixel(x1, y1);
+        let e2 = 2 * err;
         if (e2 > -dy) {
             err -= dy;
             x1 += sx;
@@ -123,6 +134,7 @@ function setPixel(x, y) {
   point(x, y);
 }
 
+/* Create the etch-a-sketch */
 buildEtchASketch = () => {
     let etchASketch = createElement('div');
     etchASketch.id('etchASketch');
@@ -130,7 +142,6 @@ buildEtchASketch = () => {
     etchASketch.style('width', '680px');
     etchASketch.style('border', '2px solid black');
     etchASketch.style('border-radius', '10px');
-    // etchASketch.style('pointer-events', 'none'); // Make the border element not interactable
     
     let header = createElement('div');
     header.id('header');
@@ -163,8 +174,6 @@ buildEtchASketch = () => {
     right.style('width', '80px');
     right.style('height', '100%');
     right.parent(canvasContainer);
-
-    // Set canvas parent to the container div
 
     canvasContainer.parent(etchASketch);
 
