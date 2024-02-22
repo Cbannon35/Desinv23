@@ -76,10 +76,6 @@ function onSerialDataReceived(eventSender, newData) {
     let data = newData.split(',')
     new_xPos = parseInt(data[0]);
     new_yPos = parseInt(data[1]);
-    /* For some reason x & y are flipped ??? */
-    let temp = new_xPos;
-    new_xPos = new_yPos;
-    new_yPos = temp;
 
     /* map the values from the arduino to the canvas */
     new_xPos = map(new_xPos, 0, MAX_ANALOG_INPUT, 0, WIDTH);
